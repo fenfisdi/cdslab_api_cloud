@@ -1,5 +1,7 @@
-from mongoengine import DateTimeField, ReferenceField, StringField
+from mongoengine import BooleanField, DateTimeField, EnumField, ReferenceField, \
+    StringField
 
+from src.models.general import MachineStatus
 from .base import BaseDocument
 from .user import User
 
@@ -11,3 +13,5 @@ class Machine(BaseDocument):
     creation_at = DateTimeField()
     gcp_id = StringField(unique=True)
     zone = StringField()
+    status = EnumField(MachineStatus)
+    is_deleted = BooleanField(default=False)

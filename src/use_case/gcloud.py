@@ -11,6 +11,7 @@ from uuid import uuid1
 from unidecode import unidecode
 
 from src.models.db import Machine, User
+from src.models.general import MachineStatus
 
 
 class SessionUseCase:
@@ -123,6 +124,7 @@ class MachineUseCase:
             zone=zone,
             ip=network.get('natIP'),
             gcp_id=information.get('id'),
+            status=MachineStatus.CREATED,
             creation_at=datetime.fromisoformat(
                 information.get('creationTimestamp')
             )
