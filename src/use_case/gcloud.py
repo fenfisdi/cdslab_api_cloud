@@ -6,6 +6,9 @@ from os import environ, path
 from subprocess import PIPE, STDOUT, run
 from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple
+from uuid import uuid1
+
+from unidecode import unidecode
 
 from src.models.db import Machine, User
 
@@ -49,7 +52,7 @@ class MachineUseCase:
     container = environ.get('GCP_CONTAINER')
 
     @classmethod
-    def create(cls) -> Tuple[Optional[dict], bool]:
+    def create(cls, user: User) -> Tuple[Optional[dict], bool]:
         scopes = [
             'https://www.googleapis.com/auth/devstorage.read_only',
             'https://www.googleapis.com/auth/logging.write',
@@ -58,10 +61,13 @@ class MachineUseCase:
             'https://www.googleapis.com/auth/service.management.readonly',
             'https://www.googleapis.com/auth/trace.append'
         ]
-        name = "pastor-prueba-1"
+
+        user_name = str(user.name)
+        user_name = unidecode(user_name.replace(" ", "").lower())
+        machine_name = '-'.join([user_name, uuid1().hex])
 
         command = f'gcloud compute instances ' \
-                  f'create-with-container {name} ' \
+                  f'create-with-container {machine_name} ' \
                   f'--project=poc-cdslib ' \
                   f'--zone=us-east1-c ' \
                   f'--machine-type=n2-custom-2-1024 ' \
@@ -82,7 +88,7 @@ class MachineUseCase:
                   f'--shielded-integrity-monitoring ' \
                   f'--format=json ' \
                   f'--verbosity=error ' \
-                  f'--container-image=gcr.io/poc-cdslib/nginx:alpine'
+                  f'--container-image={cls.container}'
 
         out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
         if out.returncode != 0:

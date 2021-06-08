@@ -18,7 +18,7 @@ def create_machine(
     if not SessionUseCase.create_session():
         return UJSONResponse(GoogleMessage.not_session, HTTP_400_BAD_REQUEST)
 
-    machine_information, is_error = MachineUseCase.create()
+    machine_information, is_error = MachineUseCase.create(user)
     if is_error:
         return UJSONResponse(GoogleMessage.error, HTTP_400_BAD_REQUEST)
 
