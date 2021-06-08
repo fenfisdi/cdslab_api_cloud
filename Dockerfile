@@ -18,7 +18,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists
 
 
-WORKDIR APP_HOME
+WORKDIR $APP_HOME
 
 COPY requirements.txt .
 
@@ -26,6 +26,7 @@ RUN pip install --no-cache-dir -U pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
+COPY docker-entrypoint.sh .
 COPY src src
 
 ENTRYPOINT ["/bin/bash"]

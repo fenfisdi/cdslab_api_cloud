@@ -1,0 +1,12 @@
+version: "3.5"
+services:
+  app:
+    build: .
+    container_name: api_cloud
+    env_file:
+      - .env
+    image: fenfisdi/cdslab_apicloud:dev
+    ports:
+      - 8080:8080
+    volumes:
+      - ./src:/app/src
