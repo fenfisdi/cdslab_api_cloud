@@ -15,3 +15,4 @@ class Machine(BaseDocument):
     zone = StringField()
     status = EnumField(MachineStatus)
     is_deleted = BooleanField(default=False)
+    deleted_at = DateTimeField(null=True)

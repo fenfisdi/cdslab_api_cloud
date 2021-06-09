@@ -51,6 +51,7 @@ class SessionUseCase:
 class MachineUseCase:
     service_account = environ.get('GCP_SERVICE_ACCOUNT')
     container = environ.get('GCP_CONTAINER')
+    project = environ.get('GCP_PROJECT')
 
     @classmethod
     def create(cls, user: User) -> Tuple[Optional[dict], bool]:
@@ -69,7 +70,7 @@ class MachineUseCase:
 
         command = f'gcloud compute instances ' \
                   f'create-with-container {machine_name} ' \
-                  f'--project=poc-cdslib ' \
+                  f'--project={cls.project} ' \
                   f'--zone=us-east1-c ' \
                   f'--machine-type=n2-custom-2-1024 ' \
                   f'--subnet=default ' \
@@ -129,3 +130,19 @@ class MachineUseCase:
                 information.get('creationTimestamp')
             )
         )
+
+    @classmethod
+    def delete(cls, user: User, machine: Machine):
+        command = f'gcloud compute instances delete {machine.name} ' \
+                  f'--project=poc-cdslib ' \
+                  f'--zone={machine.zone} ' \
+                  f'--format=json'
+
+        out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
+        if out.returncode != 0:
+            return None, True
+
+        try:
+            machine.update(is_deleted=True, status=MachineStatus.DELETED)
+        finally:
+            machine.reload()
