@@ -12,6 +12,7 @@ from unidecode import unidecode
 
 from src.models.db import Machine, User
 from src.models.general import MachineStatus
+from src.models.routes import NewMachine
 
 
 class SessionUseCase:
@@ -54,7 +55,7 @@ class MachineUseCase:
     project = environ.get('GCP_PROJECT')
 
     @classmethod
-    def create(cls, user: User) -> Tuple[Optional[dict], bool]:
+    def create(cls, user: User, machine: NewMachine) -> Tuple[Optional[dict], bool]:
         scopes = [
             'https://www.googleapis.com/auth/devstorage.read_only',
             'https://www.googleapis.com/auth/logging.write',
@@ -64,15 +65,19 @@ class MachineUseCase:
             'https://www.googleapis.com/auth/trace.append'
         ]
 
+        # Machine Name
         user_name = str(user.name)
         user_name = unidecode(user_name.replace(" ", "").lower())
         machine_name = '-'.join([user_name, uuid1().hex])
+
+        # Machine Specifications
+        spec = f'n2-custom-{machine.cpu}-{machine.memory}'
 
         command = f'gcloud compute instances ' \
                   f'create-with-container {machine_name} ' \
                   f'--project={cls.project} ' \
                   f'--zone=us-east1-c ' \
-                  f'--machine-type=n2-custom-2-1024 ' \
+                  f'--machine-type={spec} ' \
                   f'--subnet=default ' \
                   f'--network-tier=PREMIUM ' \
                   f'--metadata=google-logging-enabled=true ' \
@@ -118,6 +123,9 @@ class MachineUseCase:
         network = public_interface.get('accessConfigs')[0]
 
         # Creation Date
+        creation_date = datetime.fromisoformat(
+            information.get('creationTimestamp')
+        )
 
         return Machine(
             user=user,
@@ -126,9 +134,7 @@ class MachineUseCase:
             ip=network.get('natIP'),
             gcp_id=information.get('id'),
             status=MachineStatus.CREATED,
-            creation_at=datetime.fromisoformat(
-                information.get('creationTimestamp')
-            )
+            creation_at=creation_date,
         )
 
     @classmethod
@@ -136,6 +142,7 @@ class MachineUseCase:
         command = f'gcloud compute instances delete {machine.name} ' \
                   f'--project=poc-cdslib ' \
                   f'--zone={machine.zone} ' \
+                  f'--verbosity=error ' \
                   f'--format=json'
 
         out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
