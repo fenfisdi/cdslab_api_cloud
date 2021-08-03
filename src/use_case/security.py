@@ -15,7 +15,7 @@ class SecurityUseCase:
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
     @classmethod
-    def get_current_user(cls, token: str = Depends(oauth2_scheme)):
+    def get_current_user(cls, token: str = Depends(oauth2_scheme)) -> User:
         token_data = cls._validate_token(token)
         email = token_data.get('email')
 
@@ -28,7 +28,6 @@ class SecurityUseCase:
             user = User(
                 name=user_data.get('name'),
                 email=user_data.get('email'),
-                is_enabled=user_data.get('is_enabled')
             )
             user.save()
 
