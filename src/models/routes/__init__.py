@@ -1,3 +1,3 @@
-from .machine import NewMachine
+from .machine import Simulation
 
-__all__ = ['NewMachine']
+__all__ = ['Simulation']

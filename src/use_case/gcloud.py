@@ -12,7 +12,7 @@ from unidecode import unidecode
 
 from src.models.db import Machine, User
 from src.models.general import MachineStatus
-from src.models.routes import NewMachine
+from src.models.routes import Simulation
 
 
 class SessionUseCase:
@@ -55,7 +55,14 @@ class MachineUseCase:
     project = environ.get('GCP_PROJECT')
 
     @classmethod
-    def create(cls, user: User, machine: NewMachine) -> Tuple[Optional[dict], bool]:
+    def create(cls, user: User, simulation: Simulation) -> Tuple[Optional[dict], bool]:
+        machine = simulation.machine
+        container_env = dict(
+            HOST="0.0.0.0",
+            PORT=80,
+            CLOUD_API=environ.get("CLOUD_API"),
+        )
+        container_env_list = [f"{k}={v}" for k, v in container_env.items()]
         scopes = [
             'https://www.googleapis.com/auth/devstorage.read_only',
             'https://www.googleapis.com/auth/logging.write',
@@ -95,6 +102,7 @@ class MachineUseCase:
                   f'--shielded-integrity-monitoring ' \
                   f'--format=json ' \
                   f'--verbosity=error ' \
+                  f'--container-env={",".join(container_env_list)} ' \
                   f'--container-image={cls.container}'
 
         out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
@@ -112,7 +120,12 @@ class MachineUseCase:
             raise Exception(error)
 
     @classmethod
-    def save(cls, information: dict, user: User) -> Machine:
+    def save(
+        cls,
+        information: dict,
+        simulation: Simulation,
+        user: User
+    ) -> Machine:
         # Get Zone Instance
         zone_regex = r"(us-[a-z1-9A-Z]{3,8}-.$)"
         zone = information.get('zone')
@@ -130,6 +143,7 @@ class MachineUseCase:
         return Machine(
             user=user,
             name=information.get('name'),
+            simulation_id=simulation.simulation_id,
             zone=zone,
             ip=network.get('natIP'),
             gcp_id=information.get('id'),

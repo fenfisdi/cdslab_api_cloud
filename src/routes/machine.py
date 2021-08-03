@@ -7,19 +7,24 @@ from starlette.status import (
 )
 
 from src.interfaces import MachineInterface
-from src.models.routes import NewMachine
-from src.use_case import SecurityUseCase
-from src.use_case.gcloud import MachineUseCase, SessionUseCase
+from src.models.routes import Simulation
+from src.use_case import (
+    MachineUseCase,
+    SecurityUseCase,
+    SessionUseCase,
+    SimulationUseCase
+)
 from src.utils.message import GoogleMessage, MachineMessage
 from src.utils.response import UJSONResponse
 
 machine_routes = APIRouter()
 
 
-@machine_routes.post("/machine")
+@machine_routes.post("/simulation/execute")
 def create_machine(
-    machine: NewMachine,
-    user=Depends(SecurityUseCase.get_current_user)
+    simulation: Simulation,
+    background_task: BackgroundTasks,
+    user = Depends(SecurityUseCase.get_current_user)
 ):
     machine_found = MachineInterface.find_one(user)
     if machine_found:
@@ -36,24 +41,35 @@ def create_machine(
     if not SessionUseCase.create_session():
         return UJSONResponse(GoogleMessage.not_session, HTTP_400_BAD_REQUEST)
 
-    machine_information, is_error = MachineUseCase.create(user, machine)
+    machine_information, is_error = MachineUseCase.create(user, simulation)
     if is_error:
         return UJSONResponse(GoogleMessage.error, HTTP_400_BAD_REQUEST)
 
-    machine = MachineUseCase.save(machine_information, user)
+    machine = MachineUseCase.save(machine_information, simulation, user)
 
     try:
         machine.save()
     except Exception as error:
         UJSONResponse(str(error), HTTP_400_BAD_REQUEST)
 
+    background_task.add_task(
+        SimulationUseCase.send_information,
+        machine,
+        simulation
+    )
+
     return UJSONResponse(MachineMessage.created, HTTP_201_CREATED)
+
+
+@machine_routes.post("/simulation/finish")
+def finish_simulation():
+    return {"hola": "mundo"}
 
 
 @machine_routes.delete("/machine")
 def delete_machine(
     background_task: BackgroundTasks,
-    user=Depends(SecurityUseCase.get_current_user)
+    user = Depends(SecurityUseCase.get_current_user)
 ):
     machine_found = MachineInterface.find_one(user)
     if not machine_found:
