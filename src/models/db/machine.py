@@ -3,19 +3,17 @@ from mongoengine import (
     DateTimeField,
     EnumField,
     ReferenceField,
-    StringField,
-    UUIDField
+    StringField
 )
 
 from src.models.general import MachineStatus
 from .base import BaseDocument
-from .user import User
+from .execution import Execution
 
 
 class Machine(BaseDocument):
+    execution = ReferenceField(Execution, dbref=True)
     name = StringField()
-    user = ReferenceField(User, dbref=True)
-    simulation_id = UUIDField(binary=False)
     ip = StringField()
     creation_at = DateTimeField()
     gcp_id = StringField(unique=True)
