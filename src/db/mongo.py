@@ -9,5 +9,5 @@ class MongoEngine(metaclass=Singleton):
     def __init__(self):
         self.mongo_uri = environ.get('MONGO_URI')
 
-    def get_connection(self):
+    def register_connection(self):
         return connect(host=self.mongo_uri)
