@@ -2,8 +2,23 @@ from time import sleep
 
 import requests
 
-from src.models.db import Machine
+from src.models.db import Execution, Machine, User
 from src.models.routes import Simulation
+
+
+class CreateExecution:
+
+    @classmethod
+    def handle(cls, simulation: Simulation, user: User) -> Execution:
+        execution = Execution(
+            user=user,
+            simulation_id=simulation.simulation_id,
+        )
+        try:
+            execution.save()
+            return execution
+        except Exception as error:
+            raise RuntimeError(error)
 
 
 class SimulationUseCase:

@@ -17,6 +17,7 @@ class MachineMessage:
 
 @dataclass
 class GoogleMessage:
+    unavailable: str = 'Google session unavailable'
     created: str = 'Simulation Instance Created'
     error: str = 'Can not create GCP Instance'
     not_session: str = 'Can not start Session'
