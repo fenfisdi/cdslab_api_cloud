@@ -21,3 +21,10 @@ class GoogleMessage:
     created: str = 'Simulation Instance Created'
     error: str = 'Can not create GCP Instance'
     not_session: str = 'Can not start Session'
+
+
+@dataclass
+class ExecutionMessage:
+    not_found: str = 'Execution not found'
+    failure: str = 'Execution stopped by failure'
+    finish: str = 'Execution has been finish'
