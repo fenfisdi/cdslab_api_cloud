@@ -24,7 +24,7 @@ class CreateMultipleMachines:
     ):
         project = environ.get('GCP_PROJECT')
         list_machines = []
-        for i in range(simulation.machine.instances):
+        for _ in range(simulation.machine.instances):
             information, is_invalid = cls.create_machine(
                 user,
                 project,

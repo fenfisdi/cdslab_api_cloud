@@ -28,3 +28,4 @@ class ExecutionMessage:
     not_found: str = 'Execution not found'
     failure: str = 'Execution stopped by failure'
     finish: str = 'Execution has been finish'
+    invalid: str = 'Execution can not start'
