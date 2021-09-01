@@ -1,10 +1,19 @@
-from .gcloud import MachineUseCase, SessionUseCase
+from .machine import CreateMultipleMachines
 from .security import SecurityUseCase
-from .simulation import SimulationUseCase
+from .session import SessionUseCase
+from .simulation import (
+    CreateExecution,
+    ProcessInformation,
+    SendSimulationData,
+    SimulationUseCase
+)
 
 __all__ = [
     'SecurityUseCase',
     'SimulationUseCase',
-    'MachineUseCase',
-    'SessionUseCase'
+    'SessionUseCase',
+    'CreateMultipleMachines',
+    'CreateExecution',
+    'ProcessInformation',
+    'SendSimulationData'
 ]
