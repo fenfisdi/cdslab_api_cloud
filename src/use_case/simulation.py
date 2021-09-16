@@ -1,13 +1,14 @@
-from time import sleep
 from typing import List, Union
 from uuid import UUID
 
 import requests
 
+from src.interfaces import MachineInterface
 from src.models.db import Execution, Machine, User
 from src.models.routes import Simulation
+from .machine import DeleteMachine
 from .storage import UploadBucketFile
-from ..interfaces import MachineInterface
+from ..models.general import MachineStatus
 
 
 class CreateExecution:
@@ -31,15 +32,14 @@ class SendSimulationData:
     def handle(cls, simulation: Simulation, execution: Execution):
         machines = MachineInterface.find_all_by_execution(execution)
         for machine in machines:
-            print(machine.ip)
+            cls._send_information(simulation.data, machine.ip)
 
     @classmethod
-    def send_information(cls, data: dict, ip: str):
-        endpoint = "/endpoint"
-        url = f"http://{ip}"
+    def _send_information(cls, data: dict, ip: str):
+        url = f"http://{ip}/execute"
         try:
             response = requests.post(
-                "/".join([url, endpoint]),
+                url=url,
                 json=data
             )
         except Exception as error:
@@ -108,8 +108,6 @@ class SimulationUseCase:
     @classmethod
     def send_information(cls, machine: Machine, simulation: Simulation):
         url = f"http://{machine.ip}/any_machine"
-        print(url)
-        sleep(10)
         try:
             response = requests.get(url, json=simulation.data)
         except Exception as error:
@@ -118,7 +116,6 @@ class SimulationUseCase:
             print("Ping")
 
         try:
-            response = requests.post(url, json=simulation.data)
-            print(response.json())
+            requests.post(url, json=simulation.data)
         except Exception as error:
             print(error)

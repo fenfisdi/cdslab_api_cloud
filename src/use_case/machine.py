@@ -6,7 +6,10 @@ from subprocess import PIPE, STDOUT, run
 from typing import Optional, Tuple
 from uuid import uuid1
 
+from requests import Session
+from requests.adapters import HTTPAdapter
 from unidecode import unidecode
+from urllib3 import Retry
 
 from src.models.db import Execution, Machine as DBMachine, User
 from src.models.general import MachineStatus
@@ -30,12 +33,14 @@ class CreateMultipleMachines:
                 project,
                 simulation.machine
             )
+
             if not is_invalid:
                 new_machine = await cls._save_information_machine(
                     information,
                     execution
                 )
                 list_machines.append(new_machine)
+                cls._test_ip_machine(new_machine)
 
     @classmethod
     def create_machine(
@@ -122,6 +127,19 @@ class CreateMultipleMachines:
         return f'n2-custom-{machine.cpu}-{machine.memory}'
 
     @classmethod
+    def _test_ip_machine(cls, machine: DBMachine):
+        try:
+            session = Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            response = session.post(
+                url=f"http://{machine.ip}/testing",
+            )
+        except Exception as error:
+            print(error)
+
+    @classmethod
     async def _save_information_machine(
         cls,
         information: dict,
@@ -154,3 +172,27 @@ class CreateMultipleMachines:
             raise RuntimeError('Can not save information')
 
         return machine
+
+
+class DeleteMachine:
+
+    @classmethod
+    def handle(cls, name: str, zone: str) -> bool:
+        project = environ.get('GCP_PROJECT')
+        command = f'gcloud compute instances delete {name} ' \
+                  f'--project={project} ' \
+                  f'--zone={zone} ' \
+                  f'--quiet '\
+                  f'--format=json'
+
+        information, is_invalid = cls._run_command(command)
+        if is_invalid:
+            return True
+        return False
+
+    @classmethod
+    def _run_command(cls, command: str) -> Tuple[Optional[dict], bool]:
+        out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
+        if out.returncode != 0:
+            return None, True
+        return {}, False
