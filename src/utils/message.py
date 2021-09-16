@@ -13,6 +13,7 @@ class MachineMessage:
     exist: str = 'Machine exist'
     created: str = 'Machine has been created'
     not_found: str = 'Machine not found'
+    can_not_stop: str = 'Machine can not stopped'
 
 
 @dataclass
