@@ -2,7 +2,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from starlette.background import BackgroundTasks
-from starlette.status import (HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_503_SERVICE_UNAVAILABLE)
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE
+)
 
 from src.interfaces import ExecutionInterface
 from src.models.routes import Simulation
@@ -13,7 +20,8 @@ from src.use_case import (
     SecurityUseCase,
     SendSimulationData,
     SessionUseCase,
-    StopSimulationEmergency
+    StopSimulationEmergency,
+    TestMachine
 )
 from src.utils.message import ExecutionMessage, GoogleMessage, MachineMessage
 from src.utils.response import UJSONResponse
@@ -45,6 +53,7 @@ async def execute_simulation(
     if not is_valid:
         return UJSONResponse(ExecutionMessage.invalid, HTTP_400_BAD_REQUEST)
     await CreateMultipleMachines.handle(simulation, execution, user)
+    TestMachine.handle(execution)
 
     background_tasks.add_task(
         SendSimulationData.handle,
@@ -73,7 +82,10 @@ def finish_simulation(
 
     if is_emergency:
         instance_name = data.get("name")
-        has_error = StopSimulationEmergency.handle(execution, instance_name)
+        has_error = StopSimulationEmergency.handle(
+            execution,
+            instance_name
+        )
         if has_error:
             return UJSONResponse(
                 MachineMessage.can_not_stop,
