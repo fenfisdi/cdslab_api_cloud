@@ -33,7 +33,7 @@ machine_routes = APIRouter(
 
 
 @machine_routes.post("/simulation/execute")
-async def execute_simulation(
+def execute_simulation(
     simulation: Simulation,
     background_tasks: BackgroundTasks,
     user = Depends(SecurityUseCase.get_current_user),

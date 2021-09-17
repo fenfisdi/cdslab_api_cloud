@@ -3,14 +3,17 @@ from datetime import datetime
 from json import loads
 from os import environ
 from subprocess import PIPE, STDOUT, run
+from time import sleep
 from typing import Optional, Tuple
 from uuid import uuid1
 
+import requests
 from requests import Session
 from requests.adapters import HTTPAdapter
 from unidecode import unidecode
 from urllib3 import Retry
 
+from src.interfaces import MachineInterface
 from src.models.db import Execution, Machine as DBMachine, User
 from src.models.general import MachineStatus
 from src.models.routes.machine import Machine, Simulation
@@ -19,7 +22,7 @@ from src.models.routes.machine import Machine, Simulation
 class CreateMultipleMachines:
 
     @classmethod
-    async def handle(
+    def handle(
         cls,
         simulation: Simulation,
         execution: Execution,
@@ -35,12 +38,11 @@ class CreateMultipleMachines:
             )
 
             if not is_invalid:
-                new_machine = await cls._save_information_machine(
+                new_machine = cls._save_information_machine(
                     information,
                     execution
                 )
                 list_machines.append(new_machine)
-                cls._test_ip_machine(new_machine)
 
     @classmethod
     def create_machine(
@@ -140,7 +142,7 @@ class CreateMultipleMachines:
             print(error)
 
     @classmethod
-    async def _save_information_machine(
+    def _save_information_machine(
         cls,
         information: dict,
         execution: Execution
@@ -172,6 +174,24 @@ class CreateMultipleMachines:
             raise RuntimeError('Can not save information')
 
         return machine
+
+
+class TestMachine:
+
+    @classmethod
+    def handle(cls, execution: Execution):
+        machines = MachineInterface.find_all_by_execution(execution)
+        sleep(60)
+        for machine in machines:
+            cls.test_ip_machine(machine)
+
+    @classmethod
+    def test_ip_machine(cls, machine: DBMachine):
+        endpoint = f"http://{machine.ip}/testing"
+        try:
+            requests.post(url=endpoint, verify=False)
+        except Exception:
+            pass
 
 
 class DeleteMachine:

@@ -1,4 +1,4 @@
-from .machine import CreateMultipleMachines, DeleteMachine
+from .machine import CreateMultipleMachines, DeleteMachine, TestMachine
 from .security import SecurityUseCase
 from .session import SessionUseCase
 from .simulation import (
@@ -18,5 +18,6 @@ __all__ = [
     'ProcessInformation',
     'SendSimulationData',
     'DeleteMachine',
-    'StopSimulationEmergency'
+    'StopSimulationEmergency',
+    'TestMachine'
 ]
