@@ -52,7 +52,7 @@ def execute_simulation(
     )
     if not is_valid:
         return UJSONResponse(ExecutionMessage.invalid, HTTP_400_BAD_REQUEST)
-    await CreateMultipleMachines.handle(simulation, execution, user)
+    CreateMultipleMachines.handle(simulation, execution, user)
     TestMachine.handle(execution)
 
     background_tasks.add_task(
