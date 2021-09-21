@@ -92,6 +92,13 @@ class CreateMultipleMachines:
             "HOST": "0.0.0.0",
             "PORT": 80,
             "CLOUD_API": environ.get("CLOUD_API"),
+            "GCP_PROJECT": environ.get("GCP_PROJECT"),
+            "GCP_BUCKET_NAME": environ.get("GCP_BUCKET_NAME"),
+            "GOOGLE_CLOUD_PROJECT": environ.get("GOOGLE_CLOUD_PROJECT"),
+            "GCP_SERVICE_ACCOUNT": environ.get("GCP_SERVICE_ACCOUNT"),
+            "GOOGLE_APPLICATION_CREDENTIALS": environ.get(
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            ),
         }
 
         return ",".join([f"{k}={v}" for k, v in container_env.items()])
