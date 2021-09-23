@@ -4,7 +4,7 @@ from uuid import UUID
 import requests
 
 from src.interfaces import MachineInterface
-from src.models.db import Execution, Machine, User
+from src.models.db import Execution, User
 from src.models.general import MachineStatus
 from src.models.routes import Simulation
 from .machine import DeleteMachine
@@ -32,7 +32,7 @@ class SendSimulationData:
     def handle(cls, simulation: Simulation, execution: Execution):
         machines = MachineInterface.find_all_by_execution(execution)
         for machine in machines:
-            has_error = cls._send_information(simulation.data, machine.ip)
+            cls._send_information(simulation.data, machine.ip)
 
     @classmethod
     def _send_information(cls, data: dict, ip: str):
@@ -99,29 +99,6 @@ class ProcessInformation:
                 UploadBucketFile.handle(simulation_uuid, v.get("file_id"))
 
 
-class StopMachineSimulation:
-
-    @classmethod
-    def handle(cls, execution: Execution):
-        pass
-
-
-class SimulationUseCase:
-
-    @classmethod
-    def send_information(cls, machine: Machine, simulation: Simulation):
-        url = f"http://{machine.ip}/any_machine"
-        try:
-            requests.get(url, json=simulation.data)
-        except Exception:
-            pass
-
-        try:
-            requests.post(url, json=simulation.data)
-        except Exception:
-            pass
-
-
 class VerifySimulation:
 
     @classmethod
@@ -148,27 +125,21 @@ class StopSimulationExecution:
         machine = MachineInterface.find_one_by_name(name)
         try:
             machine.update(status=MachineStatus.FINISHED)
-        except Exception:
-            pass
 
-        if not machine:
-            return True
-        is_invalid = DeleteMachine.handle(machine.name, machine.zone)
-        if is_invalid:
-            return True
+            if not machine:
+                return True
+            is_invalid = DeleteMachine.handle(machine.name, machine.zone)
+            if is_invalid:
+                return True
 
-        try:
             if emergency:
                 machine.update(status=MachineStatus.ERROR_EMERGENCY)
             else:
                 machine.update(status=MachineStatus.DELETED)
             machine.reload()
-        except Exception:
-            pass
 
-        try:
             VerifySimulation.handle(execution)
         except Exception:
-            pass
+            return True
 
         return False
