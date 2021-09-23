@@ -20,7 +20,7 @@ from src.use_case import (
     SecurityUseCase,
     SendSimulationData,
     SessionUseCase,
-    StopSimulationEmergency,
+    StopSimulationExecution,
     TestMachine
 )
 from src.utils.message import ExecutionMessage, GoogleMessage, MachineMessage
@@ -80,18 +80,14 @@ def finish_simulation(
     if not execution:
         return UJSONResponse(ExecutionMessage.not_found, HTTP_404_NOT_FOUND)
 
-    if is_emergency:
-        instance_name = data.get("name")
-        has_error = StopSimulationEmergency.handle(
-            execution,
-            instance_name
+    instance_name = data.get("name")
+    has_error = StopSimulationExecution.handle(
+        execution,
+        instance_name, is_emergency
+    )
+    if has_error:
+        return UJSONResponse(
+            MachineMessage.can_not_stop,
+            HTTP_500_INTERNAL_SERVER_ERROR
         )
-        if has_error:
-            return UJSONResponse(
-                MachineMessage.can_not_stop,
-                HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        return UJSONResponse(ExecutionMessage.failure, HTTP_200_OK)
-    # TODO: delete machine and set finish status
     return UJSONResponse(ExecutionMessage.finish, HTTP_200_OK)

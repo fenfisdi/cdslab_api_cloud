@@ -5,19 +5,17 @@ from .simulation import (
     CreateExecution,
     ProcessInformation,
     SendSimulationData,
-    SimulationUseCase,
-    StopSimulationEmergency
+    StopSimulationExecution
 )
 
 __all__ = [
     'SecurityUseCase',
-    'SimulationUseCase',
     'SessionUseCase',
     'CreateMultipleMachines',
     'CreateExecution',
     'ProcessInformation',
     'SendSimulationData',
     'DeleteMachine',
-    'StopSimulationEmergency',
+    'StopSimulationExecution',
     'TestMachine'
 ]
