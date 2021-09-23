@@ -3,11 +3,17 @@ from datetime import datetime
 from json import loads
 from os import environ
 from subprocess import PIPE, STDOUT, run
+from time import sleep
 from typing import Optional, Tuple
 from uuid import uuid1
 
+import requests
+from requests import Session
+from requests.adapters import HTTPAdapter
 from unidecode import unidecode
+from urllib3 import Retry
 
+from src.interfaces import MachineInterface
 from src.models.db import Execution, Machine as DBMachine, User
 from src.models.general import MachineStatus
 from src.models.routes.machine import Machine, Simulation
@@ -16,7 +22,7 @@ from src.models.routes.machine import Machine, Simulation
 class CreateMultipleMachines:
 
     @classmethod
-    async def handle(
+    def handle(
         cls,
         simulation: Simulation,
         execution: Execution,
@@ -30,8 +36,9 @@ class CreateMultipleMachines:
                 project,
                 simulation.machine
             )
+
             if not is_invalid:
-                new_machine = await cls._save_information_machine(
+                new_machine = cls._save_information_machine(
                     information,
                     execution
                 )
@@ -85,6 +92,13 @@ class CreateMultipleMachines:
             "HOST": "0.0.0.0",
             "PORT": 80,
             "CLOUD_API": environ.get("CLOUD_API"),
+            "GCP_PROJECT": environ.get("GCP_PROJECT"),
+            "GCP_BUCKET_NAME": environ.get("GCP_BUCKET_NAME"),
+            "GOOGLE_CLOUD_PROJECT": environ.get("GOOGLE_CLOUD_PROJECT"),
+            "GCP_SERVICE_ACCOUNT": environ.get("GCP_SERVICE_ACCOUNT"),
+            "GOOGLE_APPLICATION_CREDENTIALS": environ.get(
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            ),
         }
 
         return ",".join([f"{k}={v}" for k, v in container_env.items()])
@@ -122,7 +136,20 @@ class CreateMultipleMachines:
         return f'n2-custom-{machine.cpu}-{machine.memory}'
 
     @classmethod
-    async def _save_information_machine(
+    def _test_ip_machine(cls, machine: DBMachine):
+        try:
+            session = Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.post(
+                url=f"http://{machine.ip}/testing",
+            )
+        except Exception as error:
+            print(error)
+
+    @classmethod
+    def _save_information_machine(
         cls,
         information: dict,
         execution: Execution
@@ -154,3 +181,45 @@ class CreateMultipleMachines:
             raise RuntimeError('Can not save information')
 
         return machine
+
+
+class TestMachine:
+
+    @classmethod
+    def handle(cls, execution: Execution):
+        machines = MachineInterface.find_all_by_execution(execution)
+        sleep(60)
+        for machine in machines:
+            cls.test_ip_machine(machine)
+
+    @classmethod
+    def test_ip_machine(cls, machine: DBMachine):
+        endpoint = f"http://{machine.ip}/testing"
+        try:
+            requests.post(url=endpoint, verify=False)
+        except Exception:
+            pass
+
+
+class DeleteMachine:
+
+    @classmethod
+    def handle(cls, name: str, zone: str) -> bool:
+        project = environ.get('GCP_PROJECT')
+        command = f'gcloud compute instances delete {name} ' \
+                  f'--project={project} ' \
+                  f'--zone={zone} ' \
+                  f'--quiet '\
+                  f'--format=json'
+
+        information, is_invalid = cls._run_command(command)
+        if is_invalid:
+            return True
+        return False
+
+    @classmethod
+    def _run_command(cls, command: str) -> Tuple[Optional[dict], bool]:
+        out = run(command.split(" "), stdout=PIPE, stderr=STDOUT)
+        if out.returncode != 0:
+            return None, True
+        return {}, False

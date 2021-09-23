@@ -29,6 +29,7 @@ RUN pip install --no-cache-dir -U pip \
 COPY main.py .
 COPY docker-entrypoint.sh .
 COPY src src
+COPY api.json /tmp/api_key.json
 
 ENTRYPOINT ["/bin/bash"]
 CMD ["./docker-entrypoint.sh"]
