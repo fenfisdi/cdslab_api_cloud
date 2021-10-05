@@ -7,6 +7,7 @@ from src.interfaces import MachineInterface
 from src.models.db import Execution, User
 from src.models.general import MachineStatus
 from src.models.routes import Simulation
+from src.services import ConfigAPI
 from .machine import DeleteMachine
 from .storage import UploadBucketFile
 
@@ -59,9 +60,9 @@ class ProcessInformation:
                     element,
                     simulation_uuid
                 ) for element in [
-                    data.get("susceptibility_groups"),
-                    data.get("mobility_groups")
-                ]
+                data.get("susceptibility_groups"),
+                data.get("mobility_groups")
+            ]
             ]
 
             # Upload files from disease groups and natural history
@@ -70,8 +71,8 @@ class ProcessInformation:
                     element,
                     simulation_uuid
                 ) for element in [
-                    data.get("disease_groups"), data.get("natural_history")
-                ]
+                data.get("disease_groups"), data.get("natural_history")
+            ]
             ]
             return True
         except Exception:
@@ -105,12 +106,19 @@ class VerifySimulation:
     def handle(cls, execution: Execution):
         machines = MachineInterface.find_all_by_execution(execution)
         machine_status = [machine.status for machine in machines]
-        if MachineStatus.FINISHED in machine_status:
-            # TODO: FINISH SUCCESSFULL
-            pass
-        else:
-            # TODO: EXECUTION ERROR
-            pass
+        last_status = MachineStatus.CREATED not in machine_status or \
+                      MachineStatus.FINISHED not in machine_status
+
+        if last_status:
+            if MachineStatus.DELETED in machine_status:
+                status = "executed"
+            elif MachineStatus.ERROR_EMERGENCY in machine_status:
+                status = "failed"
+
+            _, is_invalid = ConfigAPI.update_configuration_status(
+                execution.simulation_id,
+                status
+            )
 
 
 class StopSimulationExecution:
@@ -124,14 +132,13 @@ class StopSimulationExecution:
     ) -> bool:
         machine = MachineInterface.find_one_by_name(name)
         try:
-            machine.update(status=MachineStatus.FINISHED)
-
             if not machine:
                 return True
             is_invalid = DeleteMachine.handle(machine.name, machine.zone)
             if is_invalid:
                 return True
 
+            machine.update(status=MachineStatus.FINISHED)
             if emergency:
                 machine.update(status=MachineStatus.ERROR_EMERGENCY)
             else:
