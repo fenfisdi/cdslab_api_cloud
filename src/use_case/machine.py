@@ -209,7 +209,7 @@ class DeleteMachine:
         command = f'gcloud compute instances delete {name} ' \
                   f'--project={project} ' \
                   f'--zone={zone} ' \
-                  f'--quiet '\
+                  f'--quiet ' \
                   f'--format=json'
 
         information, is_invalid = cls._run_command(command)

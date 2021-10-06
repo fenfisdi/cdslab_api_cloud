@@ -21,8 +21,8 @@ class ConfigAPI:
         parameters = {
             "status": status,
         }
-        endpoint = f'/root/simulation/{str(simulation_id)}/finish'
-        response = cls.request.get(endpoint, parameters=parameters)
+        endpoint = f'/configuration/{str(simulation_id)}/finish'
+        response = cls.request.post(endpoint, parameters=parameters)
         if not response.ok:
             return to_response(response), True
         return response, False
