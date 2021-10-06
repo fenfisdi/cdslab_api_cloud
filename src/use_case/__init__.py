@@ -5,7 +5,8 @@ from .simulation import (
     CreateExecution,
     ProcessInformation,
     SendSimulationData,
-    StopSimulationExecution
+    StopSimulationExecution,
+    VerifySimulationFinish
 )
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'SendSimulationData',
     'DeleteMachine',
     'StopSimulationExecution',
-    'TestMachine'
+    'TestMachine',
+    'VerifySimulationFinish'
 ]

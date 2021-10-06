@@ -4,10 +4,10 @@ from uuid import UUID
 import requests
 
 from src.interfaces import MachineInterface
-from src.models.db import Execution, User
+from src.models.db import Execution, Machine, User
 from src.models.general import MachineStatus
 from src.models.routes import Simulation
-from src.services import ConfigAPI
+from src.services import AverageAPI, ConfigAPI
 from .machine import DeleteMachine
 from .storage import UploadBucketFile
 
@@ -33,18 +33,26 @@ class SendSimulationData:
     def handle(cls, simulation: Simulation, execution: Execution):
         machines = MachineInterface.find_all_by_execution(execution)
         for machine in machines:
-            cls._send_information(simulation.data, machine.ip)
+            is_valid = cls._send_information(simulation.data, machine.ip)
+            if is_valid:
+                try:
+                    machine.update(status=MachineStatus.RUNNING)
+                except Exception:
+                    pass
 
     @classmethod
-    def _send_information(cls, data: dict, ip: str):
+    def _send_information(cls, data: dict, ip: str) -> bool:
         url = f"http://{ip}/execute"
         try:
-            requests.post(
+            response = requests.post(
                 url=url,
                 json=data
             )
+            if response.ok:
+                return True
+            return False
         except Exception:
-            pass
+            return False
 
 
 class ProcessInformation:
@@ -146,7 +154,28 @@ class StopSimulationExecution:
             machine.reload()
 
             VerifySimulation.handle(execution)
+
         except Exception:
             return True
 
+        return False
+
+
+class VerifySimulationFinish:
+
+    @classmethod
+    def handle(cls, execution: Execution):
+        machines = MachineInterface.find_all_by_execution(execution)
+        is_valid = cls.__verify_machines(machines)
+        if is_valid:
+            AverageAPI.process_results(
+                execution.simulation_id
+            )
+
+    @classmethod
+    def __verify_machines(cls, machines: List[Machine]) -> bool:
+        machine_status = [machine.status for machine in machines]
+        if MachineStatus.RUNNING not in machine_status:
+            if MachineStatus.FINISHED in machine_status:
+                return True
         return False

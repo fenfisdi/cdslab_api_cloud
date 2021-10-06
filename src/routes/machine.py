@@ -21,7 +21,8 @@ from src.use_case import (
     SendSimulationData,
     SessionUseCase,
     StopSimulationExecution,
-    TestMachine
+    TestMachine,
+    VerifySimulationFinish
 )
 from src.utils.message import ExecutionMessage, GoogleMessage, MachineMessage
 from src.utils.response import UJSONResponse
@@ -67,9 +68,11 @@ def execute_simulation(
 @machine_routes.post("/simulation/{simulation_uuid}/finish")
 def finish_simulation(
     simulation_uuid: UUID,
+    background_task: BackgroundTasks,
     data: dict = None,
     is_emergency: bool = Query(False),
-    is_logged = Depends(SessionUseCase.create_session)
+    is_logged = Depends(SessionUseCase.create_session),
+
 ):
     if not is_logged:
         return UJSONResponse(
@@ -85,9 +88,11 @@ def finish_simulation(
         execution,
         instance_name, is_emergency
     )
+
     if has_error:
         return UJSONResponse(
             MachineMessage.can_not_stop,
             HTTP_500_INTERNAL_SERVER_ERROR
         )
+    background_task.add_task(VerifySimulationFinish.handle, execution)
     return UJSONResponse(ExecutionMessage.finish, HTTP_200_OK)
