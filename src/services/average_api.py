@@ -17,7 +17,7 @@ class AverageAPI:
         cls,
         simulation_id: Union[UUID, str]
     ) -> Tuple[Union[Response, UJSONResponse], bool]:
-        endpoint = f'/configuration/{str(simulation_id)}/finish'
+        endpoint = f'/configuration/{str(simulation_id)}'
         response = cls.request.get(endpoint)
         if not response.ok:
             return to_response(response), True

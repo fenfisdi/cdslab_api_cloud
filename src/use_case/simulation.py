@@ -176,6 +176,7 @@ class VerifySimulationFinish:
     def __verify_machines(cls, machines: List[Machine]) -> bool:
         machine_status = [machine.status for machine in machines]
         if MachineStatus.RUNNING not in machine_status:
+            # TODO: Verify Finished Status
             if MachineStatus.FINISHED in machine_status:
                 return True
         return False
