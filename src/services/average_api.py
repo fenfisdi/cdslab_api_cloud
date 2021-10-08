@@ -8,21 +8,17 @@ from src.utils.response import UJSONResponse, to_response
 from .service import API, APIService
 
 
-class ConfigAPI:
-    api_url = environ.get('CONFIG_API')
+class AverageAPI:
+    api_url = environ.get('AVERAGE_API')
     request = APIService(API(api_url))
 
     @classmethod
-    def update_configuration_status(
+    def process_results(
         cls,
-        simulation_id: Union[UUID, str],
-        status: str
+        simulation_id: Union[UUID, str]
     ) -> Tuple[Union[Response, UJSONResponse], bool]:
-        parameters = {
-            "status": status,
-        }
-        endpoint = f'/configuration/{str(simulation_id)}/finish'
-        response = cls.request.post(endpoint, parameters=parameters)
+        endpoint = f'/configuration/{str(simulation_id)}'
+        response = cls.request.get(endpoint)
         if not response.ok:
             return to_response(response), True
         return response, False
